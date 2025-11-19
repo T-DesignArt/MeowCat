@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Chat Arc‑en‑ciel</title>
+  <style>
+    /* Fond arc-en-ciel animé */
+    :root{--bg-speed:120s}
+    html,body{height:100%;margin:0;font-family:system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial}
+    body{
+      display:flex;align-items:center;justify-content:center;
+      background: linear-gradient(90deg,#ff3cac,#784ba0,#2b86c5,#20c997,#ffd24a,#ff7b7b,#ff3cac);
+      background-size: 1400% 1400%;
+      animation: rainbow var(--bg-speed) linear infinite;
+    }
+    @keyframes rainbow{
+      0%{background-position:0% 50%}
+      50%{background-position:100% 50%}
+      100%{background-position:0% 50%}
+    }
+
+    /* Conteneur du chat */
+    .card{display:flex;flex-direction:column;align-items:center;gap:12px;padding:28px;border-radius:20px;background:rgba(255,255,255,0.12);backdrop-filter: blur(6px);box-shadow:0 10px 30px rgba(0,0,0,0.15)}
+    h1{margin:0;color:white;font-size:20px;text-shadow:0 2px 6px rgba(0,0,0,0.35)}
+
+    /* Chat SVG */
+    .cat-wrap{width:320px;height:320px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+    .cat{width:260px;height:260px;transform-origin:center bottom;transition:transform 150ms ease}
+
+    /* Rebonds */
+    .bounce{animation:bounce 520ms cubic-bezier(.2,.9,.3,1)}
+    @keyframes bounce{
+      0%{transform:translateY(0) scale(1)}
+      30%{transform:translateY(-36px) scale(1.04)}
+      55%{transform:translateY(6px) scale(0.98)}
+      75%{transform:translateY(-8px) scale(1.02)}
+      100%{transform:translateY(0) scale(1)}
+    }
+
+    /* Petit bouton discret pour activer/désactiver le son */
+    .controls{display:flex;gap:10px;align-items:center}
+    .btn{background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.2);color:white;padding:8px 12px;border-radius:10px;cursor:pointer}
+    .btn:active{transform:translateY(1px)}
+
+    /* Responsive */
+    @media (max-width:420px){.cat-wrap{width:220px;height:220px}.cat{width:180px;height:180px}}
+  </style>
+</head>
+<body>
+  <div class="card" role="main" aria-label="Chat arc en ciel">
+    <h1>Clique sur le chat 🐱</h1>
+    <div class="cat-wrap" id="catButton" aria-pressed="false" tabindex="0" title="Cliquer ou appuyer pour entendre le chat">
+      <!-- Simple SVG de chat stylisé (aucune ressource externe). -->
+      <svg class="cat" id="catSvg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <!-- Corps -->
+        <ellipse cx="100" cy="125" rx="60" ry="42" fill="#fff" opacity="0.95" stroke="#000" stroke-width="1.5"/>
+        <!-- Tete -->
+        <circle cx="100" cy="72" r="42" fill="#fff" stroke="#000" stroke-width="1.6"/>
+        <!-- Oreilles -->
+        <polygon points="68,40 88,12 99,46" fill="#fff" stroke="#000" stroke-width="1.2"/>
+        <polygon points="132,40 112,12 101,46" fill="#fff" stroke="#000" stroke-width="1.2"/>
+        <!-- Yeux -->
+        <ellipse cx="85" cy="70" rx="7" ry="9" fill="#111"/>
+        <ellipse cx="115" cy="70" rx="7" ry="9" fill="#111"/>
+        <!-- Nez -->
+        <path d="M98 82 q2 6 6 0" stroke="#d73b7a" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <!-- Bouche -->
+        <path id="smile" d="M88 90 q12 12 24 0" stroke="#000" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <!-- Joues -->
+        <circle cx="76" cy="86" r="3" fill="#ffd0da" opacity="0.9"/>
+        <circle cx="124" cy="86" r="3" fill="#ffd0da" opacity="0.9"/>
+        <!-- Queue -->
+        <path d="M148 120 q28 -30 6 -52" stroke="#fff" stroke-width="10" stroke-linecap="round" fill="none" stroke-linejoin="round"/>
+        <!-- Petits détails colorés pour le fun -->
+        <circle cx="60" cy="140" r="6" fill="#ff7b7b" opacity="0.9"/>
+        <circle cx="140" cy="140" r="6" fill="#ffd24a" opacity="0.9"/>
+      </svg>
+    </div>
+
+    <div class="controls">
+      <button class="btn" id="toggleSound">Son : ON</button>
+      <small style="color:rgba(255,255,255,0.85)">(ou appuie sur Entrée / Espace)</small>
+    </div>
+  </div>
+
+  <script>
+    // Contrôle du son
+    let soundEnabled = true;
+    const toggleBtn = document.getElementById('toggleSound');
+    toggleBtn.addEventListener('click', () => { soundEnabled = !soundEnabled; updateBtn(); });
+    function updateBtn(){ toggleBtn.textContent = 'Son : ' + (soundEnabled ? 'ON' : 'OFF'); }
+
+    // Élément du chat
+    const catWrap = document.getElementById('catButton');
+    const catSvg = document.getElementById('catSvg');
+
+    // Gestion du click / clavier
+    catWrap.addEventListener('click', activate);
+    catWrap.addEventListener('keydown', (e)=>{ if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } });
+
+    function activate(){
+      // animation rebond
+      catSvg.classList.remove('bounce');
+      // restart animation
+      void catSvg.offsetWidth;
+      catSvg.classList.add('bounce');
+
+      // son
+      if(soundEnabled) playMeow();
+
+      // petit changement de sourire temporaire
+      const smile = document.getElementById('smile');
+      smile.setAttribute('d','M88 90 q12 24 24 0');
+      setTimeout(()=> smile.setAttribute('d','M88 90 q12 12 24 0'),400);
+    }
+
+    // Synthèse simple d'un "miaulement" avec Web Audio API
+    function playMeow(){
+      try{
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const now = ctx.currentTime;
+
+        // Oscillateur principal (voix)
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(400, now);
+        osc.frequency.exponentialRampToValueAtTime(180, now + 0.38);
+
+        // Gain pour enveloppe
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, now);
+        g.gain.exponentialRampToValueAtTime(0.18, now + 0.05);
+        g.gain.exponentialRampToValueAtTime(0.02, now + 0.38);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + 0.9);
+
+        // Petite couche de bruit (comme un souffle)
+        const bufferSize = 2 * ctx.sampleRate;
+        const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) output[i] = (Math.random()*2-1) * Math.exp(-i / (bufferSize/3));
+        const white = ctx.createBufferSource();
+        white.buffer = noiseBuffer;
+
+        const noiseGain = ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.02, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
+
+        // Filtre pour rendre le bruit plus "miaulement"
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(1200, now);
+        filter.Q.setValueAtTime(0.7, now);
+
+        // Connexions
+        osc.connect(g).connect(ctx.destination);
+        white.connect(filter).connect(noiseGain).connect(ctx.destination);
+
+        // Démarrer
+        white.start(now);
+        osc.start(now);
+        osc.stop(now + 0.9);
+        white.stop(now + 0.9);
+
+      }catch(err){
+        // Fallback : speechSynthesis si WebAudio indisponible
+        if(window.speechSynthesis){
+          const u = new SpeechSynthesisUtterance('Miaou');
+          u.lang = 'fr-FR';
+          window.speechSynthesis.cancel();
+          window.speechSynthesis.speak(u);
+        }
+      }
+    }
+
+    // Petit conseil : activer l'interaction avant de jouer le son sur certains navigateurs
+    document.addEventListener('click', ()=>{ if((window.AudioContext || window.webkitAudioContext) && !window.__audioUnlocked){
+      // déverrouiller l'audio en créant un contexte silencieux puis en le fermant
+      try{ const c = new (window.AudioContext || window.webkitAudioContext)(); const s = c.createBufferSource(); s.start(0); s.stop(0); c.close(); window.__audioUnlocked = true; }catch(e){}
+    }} , { once: true });
+
+  </script>
+</body>
+</html>
